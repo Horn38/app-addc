@@ -1,47 +1,61 @@
-// This is the "Offline page" service worker
+const CACHE_NAME = 'addc-v1';
 
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
+// Fichiers essentiels à mettre en cache pour le mode hors ligne
+const FILES_TO_CACHE = [
+  '/app-addc/',
+  '/app-addc/index.html',
+  '/app-addc/manifest.json',
+  '/app-addc/android-launchericon-192-192.png',
+  '/app-addc/android-launchericon-512-512.png',
+  '/app-addc/android-launchericon-144-144.png',
+  '/app-addc/android-launchericon-96-96.png',
+  '/app-addc/android-launchericon-72-72.png',
+  '/app-addc/android-launchericon-48-48.png'
+];
 
-const CACHE = "pwabuilder-page";
-
-// TODO: replace the following with the correct offline fallback page i.e.: const offlineFallbackPage = "offline.html";
-const offlineFallbackPage = "ToDo-replace-this-name.html";
-
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
-});
-
-self.addEventListener('install', async (event) => {
+// INSTALL — mise en cache au premier chargement
+self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.add(offlineFallbackPage))
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(FILES_TO_CACHE);
+    })
   );
+  self.skipWaiting();
 });
 
-if (workbox.navigationPreload.isSupported()) {
-  workbox.navigationPreload.enable();
-}
+// ACTIVATE — supprime les anciens caches
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => {
+      return Promise.all(
+        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+      );
+    })
+  );
+  self.clients.claim();
+});
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.mode === 'navigate') {
-    event.respondWith((async () => {
-      try {
-        const preloadResp = await event.preloadResponse;
+// FETCH — Cache First : répond depuis le cache, sinon réseau
+self.addEventListener('fetch', event => {
+  // Ignorer les requêtes non-GET et les extensions Chrome
+  if (event.request.method !== 'GET') return;
+  if (event.request.url.startsWith('chrome-extension://')) return;
 
-        if (preloadResp) {
-          return preloadResp;
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+
+      return fetch(event.request).then(response => {
+        // Mettre en cache les nouvelles ressources valides
+        if (response && response.status === 200 && response.type !== 'opaque') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
-
-        const networkResp = await fetch(event.request);
-        return networkResp;
-      } catch (error) {
-
-        const cache = await caches.open(CACHE);
-        const cachedResp = await cache.match(offlineFallbackPage);
-        return cachedResp;
-      }
-    })());
-  }
+        return response;
+      }).catch(() => {
+        // Hors ligne et pas en cache — retourne index.html comme fallback
+        return caches.match('/app-addc/index.html');
+      });
+    })
+  );
 });
