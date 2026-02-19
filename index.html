@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Au-delà du Chalet</title>
+<meta name="theme-color" content="#4e7260">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ADDC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="android-launchericon-192-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
@@ -1055,5 +1062,15 @@ init();
   </div>
 </div>
 
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/app-addc/sw.js')
+        .then(reg => console.log('✅ SW enregistré:', reg.scope))
+        .catch(err => console.error('❌ SW erreur:', err));
+    });
+  }
+</script>
 </body>
 </html>
