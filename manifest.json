@@ -1,12 +1,47 @@
 {
-  "background_color": "#0c0c0c",
-  "dir": "ltr",
+  "name": "Au-delà du Chalet",
+  "short_name": "ADDC",
+  "description": "Application d'entretien et inspection des chalets locatifs",
+  "id": "addc-checklist-app",
+  "start_url": "/app-addc/",
+  "scope": "/app-addc/",
   "display": "standalone",
-  "name": "Addc Cheklist",
-  "orientation": "any",
-  "scope": "/",
-  "short_name": "addc list",
-  "start_url": "/",
-  "theme_color": "#b06104",
-  "id": "addc-checklist-app"
+  "orientation": "portrait",
+  "background_color": "#4e7260",
+  "theme_color": "#4e7260",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "android-launchericon-48-48.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "android-launchericon-72-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "android-launchericon-96-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "android-launchericon-144-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "android-launchericon-192-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "android-launchericon-512-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
