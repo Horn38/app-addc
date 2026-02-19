@@ -1,0 +1,12 @@
+{
+  "background_color": "#0c0c0c",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "Addc Cheklist",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "addc list",
+  "start_url": "/",
+  "theme_color": "#b06104",
+  "id": "addc-checklist-app"
+}
