@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Au-delà du Chalet</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --sage: #7a9e87;
+    --sage-dark: #4e7260;
+    --sage-light: #b8d4c0;
+    --sage-pale: #eaf2ec;
+    --mountain: #4a5568;
+    --cream: #faf8f4;
+    --warm: #f0ebe1;
+    --text: #2d3a30;
+    --text-light: #6b7c6e;
+    --yes: #3a9e5f;
+    --no: #e05252;
+    --btn-send: #3a9e5f;
+    --btn-save: #3a6b9e;
+    --shadow: 0 4px 20px rgba(74,114,96,0.13);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(160deg, var(--sage-dark) 0%, var(--sage) 100%);
+    padding: 18px 20px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(78,114,96,0.25);
+  }
+  .header-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: white;
+    padding: 4px;
+    object-fit: contain;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .header-title {
+    color: white;
+    line-height: 1.2;
+  }
+  .header-title .main { font-family: 'Playfair Display', serif; font-size: 1.25rem; font-weight: 600; }
+  .header-title .sub { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; font-weight: 300; }
+  .back-btn {
+    margin-left: auto;
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .back-btn.visible { display: flex; }
+  .back-btn:active { background: rgba(255,255,255,0.35); }
+
+  /* PAGES */
+  .page { display: none; animation: fadeIn 0.28s ease; }
+  .page.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* PAGE 1 - SECTEURS */
+  .page-content { padding: 20px 16px; }
+  .page-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-light);
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+  .sector-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .sector-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 18px 14px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .sector-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--sage), var(--sage-light));
+  }
+  .sector-card:active { transform: scale(0.97); border-color: var(--sage-light); }
+  .sector-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .sector-name { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+  .sector-count { font-size: 0.72rem; color: var(--text-light); margin-top: 3px; }
+
+  /* PAGE 2 - CHALETS */
+  .chalet-list { display: flex; flex-direction: column; gap: 10px; }
+  .chalet-item {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+    border-left: 4px solid var(--sage);
+  }
+  .chalet-item:active { transform: scale(0.98); background: var(--sage-pale); }
+  .chalet-name { font-weight: 700; font-size: 1rem; }
+  .chalet-arrow { color: var(--sage); font-size: 1.1rem; }
+
+  /* SECTOR TITLE */
+  .sector-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--sage-dark);
+    margin-bottom: 6px;
+  }
+  .sector-subtitle { color: var(--text-light); font-size: 0.82rem; margin-bottom: 18px; }
+
+  /* PAGE 3 - CHECKLIST */
+  .checklist-header {
+    background: var(--warm);
+    padding: 16px;
+    border-bottom: 1px solid var(--sage-light);
+  }
+  .chalet-heading {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    color: var(--sage-dark);
+    margin-bottom: 12px;
+  }
+  .info-row { display: flex; gap: 10px; }
+  .info-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .info-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-light); font-weight: 700; }
+  .info-field input {
+    background: white;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .info-field input:focus { border-color: var(--sage); }
+
+  /* CHECKLIST SECTIONS */
+  .checklist-body { padding: 16px; }
+  .cl-section {
+    margin-bottom: 20px;
+    background: white;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .cl-section-title {
+    background: linear-gradient(135deg, var(--sage-dark), var(--sage));
+    color: white;
+    padding: 11px 16px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .cl-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--sage-pale);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .cl-item:last-child { border-bottom: none; }
+  .cl-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .cl-item-label { font-size: 0.88rem; font-weight: 600; color: var(--text); flex: 1; line-height: 1.4; }
+  .cl-item-label .threshold { font-size: 0.75rem; color: var(--sage-dark); font-weight: 400; font-style: italic; display: block; margin-top: 2px; }
+  .cl-checks { display: flex; gap: 8px; flex-shrink: 0; }
+  .check-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid #ddd;
+    background: white;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+    flex-shrink: 0;
+  }
+  .check-btn.yes { border-color: var(--yes); background: var(--yes); color: white; }
+  .check-btn.no { border-color: var(--no); background: var(--no); color: white; }
+  .check-btn:not(.yes):not(.no) { color: #ccc; }
+  .qty-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 2px;
+  }
+  .qty-row label { font-size: 0.75rem; color: var(--text-light); font-weight: 600; white-space: nowrap; }
+  .qty-input {
+    width: 70px;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .qty-input:focus { border-color: var(--sage); }
+
+  /* Special items */
+  .cl-item-special { background: var(--sage-pale); }
+  .text-input {
+    width: 100%;
+    border: 1.5px solid var(--sage-light);
+    border-radius: 8px;
+    padding: 7px 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    outline: none;
+    margin-top: 4px;
+  }
+  .text-input:focus { border-color: var(--sage); }
+
+  /* BUTTONS */
+  .action-btns {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 40px;
+  }
+  .btn-send, .btn-save {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+  }
+  .btn-send { background: var(--btn-send); color: white; }
+  .btn-send:active { background: #2e8050; transform: scale(0.98); }
+  .btn-save { background: var(--btn-save); color: white; }
+  .btn-save:active { background: #2a5a8a; transform: scale(0.98); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--mountain);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .loading { opacity: 0.6; pointer-events: none; }
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:flex;}
+  .modal-box{background:white;border-radius:20px;width:100%;max-width:430px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+  .modal-hdr{background:linear-gradient(135deg,var(--sage-dark),var(--sage));padding:16px 18px;display:flex;align-items:center;justify-content:space-between;}
+  .modal-hdr h2{color:white;font-family:'Playfair Display',serif;font-size:1.05rem;}
+  .modal-close-btn{background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;}
+  .modal-body{overflow-y:auto;padding:18px;flex:1;}
+  .pw-wrap{text-align:center;padding:16px 0;}
+  .pw-wrap p{color:var(--text-light);margin-bottom:14px;font-size:0.88rem;}
+  .pw-input{width:100%;padding:11px;border:2px solid var(--sage-light);border-radius:10px;font-family:'Nunito',sans-serif;font-size:1rem;outline:none;text-align:center;letter-spacing:0.1em;margin-bottom:10px;}
+  .pw-input:focus{border-color:var(--sage);}
+  .pw-go{background:var(--sage);color:white;border:none;padding:11px 28px;border-radius:10px;font-family:'Nunito',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;}
+  .pw-err{color:var(--no);font-size:0.8rem;margin-top:8px;display:none;}
+  .adm-wrap{display:none;}
+  .adm-wrap.on{display:block;}
+  .adm-tabs{display:flex;gap:8px;margin-bottom:16px;}
+  .adm-tab-btn{flex:1;padding:9px;border:2px solid var(--sage-light);background:white;border-radius:10px;font-family:'Nunito',sans-serif;font-size:0.82rem;font-weight:700;cursor:pointer;color:var(--text-light);}
+  .adm-tab-btn.on{background:var(--sage);border-color:var(--sage);color:white;}
+  .adm-pane{display:none;}
+  .adm-pane.on{display:block;}
+  .adm-lbl{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light);font-weight:700;margin-bottom:5px;display:block;margin-top:10px;}
+  .adm-inp,.adm-sel{width:100%;padding:10px 12px;border:1.5px solid var(--sage-light);border-radius:8px;font-family:'Nunito',sans-serif;font-size:0.88rem;outline:none;color:var(--text);background:white;margin-bottom:8px;}
+  .adm-inp:focus,.adm-sel:focus{border-color:var(--sage);}
+  .adm-add{width:100%;padding:11px;background:var(--sage);color:white;border:none;border-radius:10px;font-family:'Nunito',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;}
+  .adm-add:active{background:var(--sage-dark);}
+  .adm-hr{border:none;border-top:1px solid var(--sage-light);margin:14px 0;}
+  .adm-sub{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-light);font-weight:700;margin-bottom:8px;}
+  .adm-item{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--sage-pale);border-radius:8px;margin-bottom:6px;font-size:0.88rem;font-weight:600;gap:8px;}
+  .adm-del{background:none;border:none;color:var(--no);cursor:pointer;font-size:1.1rem;padding:2px 6px;}
+  .emote-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+  .emote-row .adm-inp{margin-bottom:0;flex:1;}
+  .emote-box{font-size:1.3rem;width:44px;text-align:center;padding:9px;border:1.5px solid var(--sage-light);border-radius:8px;background:var(--sage-pale);flex-shrink:0;}
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img class="header-logo" src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABuAHQDASIAAhEBAxEB/8QAHAABAAICAwEAAAAAAAAAAAAAAAUGAwQCBwgB/8QANhAAAQMDAwEGBAMIAwAAAAAAAQIDBAAFEQYSITEHEyJBUWEUFTJxI1KhM0JygZGxwdEWJPD/xAAZAQEAAwEBAAAAAAAAAAAAAAAAAQIDBAX/xAAfEQEBAAMBAAIDAQAAAAAAAAAAAQIDESESMRMiUXH/2gAMAwEAAhEDEQA/APZFKUoFKUoFKUoFKoPbBrEaftXy6C7i5y0naUnllHQq9j5D+Z8qrnYvrl1ckaevMpbpdJMR51WTu/ISeufL+npUdZ3ZJl8XcNKj03uzKmfBpusIyd+zug+ndu6YxnOfapCpaFKUoFKUoFKUoFKUoFKUoFROrb7E05Y37nLPCBhtGeXFnokf+6ZqWrzx2yXy53XUZjyYsmJDjZEZp1BSVjzc59cfy/rUWs9mfxnVUvt0l3q7SLlOcK331bj6JHkB7AcVptrU2tK0KKVpIKVA4IPrU/2f2Nu+X9LcrIgxkF+UofkT+79ycCrX2g2aFc7Eu9WuAxDfgq2yGWUhIUyT4V4HmOAfaquPnfVQ0a85I13aX3llbrlwbWtR8yVgk16jryppJq5r1BDdtMJcyUw6l5LaUkjwkHn0HvXqaG6t6I0660WXFoBU2VBW0+YyODVo6NH1WWlKVLoKUpQKUpQKUpQK4PFYZWWwCsJJTn1rnSgqlj1S7PlCG9FSh1aVbVoVxkAnoaqapyZUUwLuwi4wj1be5Un3Srqk1N3OE/adXNS2WVqZW6HAUpJ4J8Q/v+lQd8hqg3V+MUkJSolHuk8j9Kq87ZlnJ7foh2SBpywSflspb7dzkAoKhhSW0D6Fe4UTXPT/AHa7gIb4Co8xCozyT5pWMf6rLcedPWsjoC6D99wrTtYUbnFCfq75GPvuFFMsv3l/xkKItjjuWWytGOyhRS86f2r6hwSo+ntVlhX9Vp0vb8Md8473gGVYAAUf91W79hV8mBPOX1Y/rUxc7TPe+WW1qM7saaAWvadqVKOVc+1F8cs+5WLdp2ZIuFqblyUIQpwkpCQcYzgVI1iiMIjRWo7YwhtISn7CstWehjLJOlKUokpSlApSlAqD1ZcrlbY6XYcZC2iPG6edh+3+anK+KAUkpUAQeoNFcpbOS8dXvagvDpyqe6P4Dt/tWw0+1e46Isx4Nz2+GX1nhwflUfX0NWW7aRgylFyIsxVnyAygn7eVQbmjLok+B2MsfxEf4qvK4cte2X31gRFfNml2yQ0pEmKv4hCVDkpxhWPboa1tMNJNzEpzhmIkvLP26frirdYLXeIq20zn4zzKPpzlS0+wPFbyLNGjRX24TTSVOr3/AIqSpOfIY9BU8Xmi3l/ilw2kw917uKfGtRXGZV1cV13EflFRy7rcluqcM+SFKOTh0irFN0peZclT0ibHdUf3iT/bHFZoOiUhQVNmFQ/K0nH6n/VRys/xbL5Ij9PXrUD0xEeOsys9Q6MgD1KuorsBO7aN2N2OcdM1ggQosFnuYjKWkeeOp+5rYqY7NWFwnt6UpSpalKUoFKUoFKVpXz5kbTJFnTGM8oIYMhZS2lR6EkAnjrjHPtQUvWuoZjV7tsqFLcatkG8xIEkNqGJL0hxLRQePpb7xJ4PKjjqip93WFpavF1t7oebbtUL4yVLUB3KUZUCBzuJGxWeMcEZyCBWNTdl1pf09G+S2SzI1CzLiyzcpLY75brTyHVrU6EblKUUnJwM7j9qw6+05NeXqaVcJ9oh2+6x2GEuPy1tqVsQQlpR24SkLW4sEZKiQCAAch2HY7g1drNCurDbrTUyOiQhDowtKVpCgFAdDg1Da11bG05ClOi2zbouKwZEpuItpBYZwT3i1OrQkDwnA3bj5A4OIV246Nl2liXcNRyHlWdTaXzAlSGQ0pZ8AW0yRlGRhO8HgdTya1r/ovUV1t+o7aZFvbj3KSt5LiXlpckhQSlKXDt8AbQMDG7JSg8YIIfbHqf8A4j2bWx67MXO5T/gfmExlLwdeYbWSslSnVgkAq2JGSpW3CQcHEnb50drWuqb5JuUhFvgsxYKmVvOFtDwR3qlJbzjcpLzKfCMkjHWtKRYJln1G7qa4NWebHagspcnvMqMiGlorK0tNpQdyCFceIEdTurSt2ndRS4ES72ufbJLMq8ru4bcUtLT7DgdLK1HZuK0hbB2kAfgpGQcmgmezm+/HXzUlmXAvUV6HKRKULg40sJS+CUoQUOLwMoUraraUhaRgcVdaquhtP3WyT7y7PmsPszJXfNbE5WvwISVrOAASU52pGBuPJyALVQKUpQKUpQKUpQK4vONstLddWlDaElSlKOAAOprlWvcYbNwgPwpIUWX0FtYSopOD15HSgr7GsIAmXEynVNxYyyhH/VcCwUMh1wq9sKTjgc8ck1oWlz5r2w3wTAlabJb4iYCFD9mX+8U64Pc7EJz5BJHmczD2kLG8lSXWX17+8KyqQslXeBIVk5yfoRj0IBHNfb3pW3XSe3cQ/OgT22gz8VBkKacU2DkIVjhaQSSAoHGTjGTQQ3amoJTZoUVlpUy5XSOgj6VOoZKnwgnBO3ckAnBwFKNYrPqi6m3SG3ZEWfPk3d6321SWtiT3YIcUsA/ShTb568pSBnJybFH0xaWbjAuPdvOy4DbyGHXn1uK/F2b1EqJ3KIbSMnoOBwajG+zzTbUKHFZbmNIiyFvpUiWsLcKwoLStWcqSQo5T0oKrI1Hdr1pXV0RM1DqDNas9vkBAQpZeDSVOgD90d9kdeEZzzxPN3q9XK9Kg6ZZCbfbbgzDeWtpPdLbSEl87ic8JOxISM708+HpIu6D026nauPIwZ3xysSVjLg34ScH6B3i/B9PPStq26UtNuvUm6RTKQqQ6X1RzIUWEukYU4lvoFEDn+Z6k5CL7M/mslN1ulxu7spEu4SDHjrSAG2UL7ptSfQKDW7A4JWT1q5VDaT0zatMW8QrU26G0pS2FPOFxYbTnYjcedqcnA9yepJMzQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQKUpQf/Z" alt="Au-delà du Chalet" onerror="this.style.display='none'">
+  <div class="header-title">
+    <div class="main">Au-delà du Chalet</div>
+    <div class="sub">Entretien · Inspection</div>
+  </div>
+  <button class="back-btn" id="backBtn" onclick="goBack()">← Retour</button>
+  <button onclick="openAdmin()" style="margin-left:auto;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.5);color:white;padding:6px 13px;border-radius:20px;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;">⚙️ Admin</button>
+</div>
+
+<!-- PAGE 1: SECTEURS -->
+<div class="page active" id="page-sectors">
+  <div class="page-content">
+    <div class="page-label">Choisir un secteur</div>
+    <div class="sector-grid" id="sectorGrid"></div>
+  </div>
+</div>
+
+<!-- PAGE 2: CHALETS -->
+<div class="page" id="page-chalets">
+  <div class="page-content">
+    <div class="sector-title" id="sectorTitle"></div>
+    <div class="sector-subtitle" id="sectorSubtitle"></div>
+    <div class="chalet-list" id="chaletList"></div>
+  </div>
+</div>
+
+<!-- PAGE 3: CHECKLIST -->
+<div class="page" id="page-checklist">
+  <div class="checklist-header">
+    <div class="chalet-heading" id="chaletHeading">🏡 Nom du chalet</div>
+    <div class="info-row">
+      <div class="info-field">
+        <label>Employé(e)</label>
+        <input type="text" id="employeeName" placeholder="Votre nom..." autocomplete="name">
+      </div>
+      <div class="info-field">
+        <label>Date</label>
+        <input type="date" id="visitDate">
+      </div>
+    </div>
+  </div>
+  <div class="checklist-body" id="checklistBody"></div>
+  <div style="margin:0 16px 20px;background:white;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(74,114,96,0.13);">
+    <div style="background:linear-gradient(135deg,#4e7260,#7a9e87);color:white;padding:11px 16px;font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">📝 Notes</div>
+    <div style="padding:14px;">
+      <textarea id="notesField" placeholder="Observations, remarques, problèmes constatés..." style="width:100%;min-height:140px;border:1.5px solid #b8d4c0;border-radius:10px;padding:12px 14px;font-family:'Nunito',sans-serif;font-size:0.92rem;color:#2d3a30;outline:none;resize:vertical;line-height:1.6;background:#faf8f4;"></textarea>
+    </div>
+  </div>
+  <div class="action-btns">
+    <button class="btn-send" onclick="sendEmail()">
+      <span>📤</span> Envoyer par courriel
+    </button>
+    <button class="btn-save" onclick="savePDF()">
+      <span>💾</span> Sauvegarder (PDF)
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let _savedSec=null,_savedIco=null;
+try{_savedSec=JSON.parse(localStorage.getItem('addc_sectors'));}catch(e){}
+try{_savedIco=JSON.parse(localStorage.getItem('addc_icons'));}catch(e){}
+const SECTORS = _savedSec || {
+  "Mandeville": ["Paradis du lac","Des pins","Sentier enchanté","Le Zain","1510","Cœur du boisé","Petit bonheur","Bravoir","L'Oasis","Verseau","260 degrés","Bénoline","Le Happy Goose","Castel du lac","Le Héro","Montagne","Orée du bois","Notik","Panoramique"],
+  "St-Damien": ["Suyo","L'Heure Exquise","Aramis","Athos","Porthos"],
+  "St-Gabriel": ["L'Étoile du Maski","Petite Chaumière"],
+  "St-Barthélémy": ["810","Barthélémy","Le boisé"],
+  "Ste-Ursule": ["3 Petit Castor","Le Premium"],
+  "St-Alexis": ["La cache des monts","Navya","Rêve","Loup","Bois nature","Harfang","Louveteau"],
+  "St-Côme": ["Paradis","Percené"],
+  "St-Alphonse-de-Rodriguez": ["Zör"],
+  "Ste-Béatrix": ["Villablanca"],
+  "Ste-Émilie-de-l'Énergie": ["1404","Kabana","Utopia","Sercinia","La grange","Le Moulin","Caminho","1374","Maison Blanche"],
+  "St-Jean-De-Matha": ["Lakehouse"],
+  "Autres": ["Caminho chalet"]
+};
+
+let SECTOR_ICONS = _savedIco || {
+  "Mandeville":"🏔️","St-Damien":"🌲","St-Gabriel":"⭐","St-Barthélémy":"🌿",
+  "Ste-Ursule":"🦫","St-Alexis":"🐺","St-Côme":"🍂","St-Alphonse-de-Rodriguez":"✨",
+  "Ste-Béatrix":"🏡","Ste-Émilie-de-l'Énergie":"💧","St-Jean-De-Matha":"🏊","Autres":"📍"
+};
+
+// CHECKLIST DATA
+// type: 'check' = oui/non, 'check-qty' = oui/non + quantité, 'text' = champ texte, 'info' = texte libre
+const CHECKLIST = [
+  {
+    section: "Produits d'entretien de base",
+    items: [
+      { label: "Essuie-tout", threshold: "plus que 5 rouleaux", type: "check-qty" },
+      { label: "Multi surface (nettoyant tout usage)", threshold: "plus que ½ can", type: "check-qty" },
+      { label: "Nettoyant à plancher", threshold: "plus que ½ bouteille", type: "check-qty" },
+      { label: "Savon à lessive", threshold: "plus que 1 bouteille", type: "check-qty" },
+      { label: "Windex / ou équivalent", threshold: "plus que ½ bouteille", type: "check-qty" },
+      { label: "Assouplissant", threshold: "plus que 1 bouteille", type: "check-qty" },
+      { label: "OxyClean en spray", threshold: "plus que ½ bouteille", type: "check-qty" },
+      { label: "Feuilles de Bounce", threshold: "plus que 1 boîte", type: "check-qty" },
+      { label: "Spray Easy-Off (nettoyage four)", threshold: "plus que 1 can", type: "check-qty" },
+      { label: "Vaporisateur tissu divans Febreze", threshold: "plus que 1 bouteille", type: "check-qty" },
+      { label: "Produit nettoyant pour poêle standard et vitrocéramique Vim", threshold: "plus que 1 bouteille", type: "check-qty" },
+      { label: "Boules de séchage", type: "check" },
+    ]
+  },
+  {
+    section: "Matériels et produits locataires (Au-delà du Chalet)",
+    items: [
+      { label: "Papier toilette", threshold: "plus que 10", type: "check-qty" },
+      { label: "Savon à main liquide", threshold: "plus que 1", type: "check-qty" },
+      { label: "Savon à vaisselle", threshold: "plus que 1", type: "check-qty" },
+      { label: "Éponges à vaisselle – recharge", threshold: "plus que 6", type: "check-qty" },
+      { label: "Linges à vaisselle", threshold: "plus que 6", type: "check-qty" },
+      { label: "Pastilles lave-vaisselle", threshold: "plus que 1 paquet", type: "check-qty" },
+      { label: "Désodorisant Febreze", threshold: "plus que 2 en réserve", type: "check-qty" },
+      { label: "Mouchoirs", threshold: "plus que 6", type: "check-qty" },
+      { label: "Lavette carrée pour locataires (à nettoyer)", threshold: "plus que 4", type: "check-qty" },
+      { label: "Tête de moppe Vida", threshold: "plus que 2", type: "check-qty" },
+      { label: "Tapis noir réutilisable pour grille four", type: "check" },
+    ]
+  },
+  {
+    section: "Literie",
+    items: [
+      { label: "Taie d'oreiller, draps et housse de couette", threshold: "en double au minimum / lit", type: "check-qty" },
+      { label: "Tapis de bain + serviettes à mains / salle de bain", threshold: "2 tapis + 2 serviettes / SDB", type: "check-qty" },
+      { label: "Serviette/drap de bain, débarbouillette", threshold: "2 × le nombre de locataires", type: "check-qty" },
+    ]
+  },
+  {
+    section: "Matériel d'entretien (accessible aux locataires)",
+    items: [
+      { label: "Aspirateur", type: "check" },
+      { label: "Vadrouille et seau avec tordeur", threshold: "au moins 2 têtes", type: "check-qty" },
+      { label: "Balai / porte-poussière", type: "check" },
+      { label: "Petite brosse et pelle", type: "check" },
+      { label: "Seau à cendre", type: "check" },
+      { label: "Sous-plat", type: "check" },
+      { label: "Mitaine four", type: "check" },
+      { label: "Piège à fourmis", type: "check" },
+      { label: "Pièges à souris", type: "check" },
+      { label: "Filtre spa", type: "check" },
+    ]
+  },
+  {
+    section: "Produits spa",
+    items: [
+      { label: "Oxy (OxyChlore)", type: "check-qty" },
+      { label: "Chlore", type: "check-qty" },
+      { label: "Puri spa", type: "check-qty" },
+      { label: "Anti-mousse", type: "check-qty" },
+      { label: "pH+", type: "check-qty" },
+      { label: "pH-", type: "check-qty" },
+      { label: "Alka+", type: "check-qty" },
+    ]
+  },
+  {
+    section: "Produits spécifiques selon les caractéristiques du chalet",
+    items: [
+      { label: "Produit nettoyant stainless en spray (si surface inox)", threshold: "plus que ½ bouteille", type: "check-qty" },
+      { label: "CLR en bidon (si eau ferreuse – toilettes et douches)", type: "check" },
+      { label: "Plat alu pour gras BBQ au four", type: "check" },
+      { label: "Brosse à BBQ", type: "check" },
+      { label: "Bonbonne à remplir", type: "check-bonbonne" },
+    ]
+  },
+  {
+    section: "Épicerie de base (condiments / essentiels)",
+    items: [
+      { label: "Vinaigre", type: "check" },
+      { label: "Sel", type: "check" },
+      { label: "Poivre", type: "check" },
+      { label: "Huile", type: "check" },
+      { label: "Café", type: "check" },
+      { label: "Filtre café", type: "check" },
+      { label: "Sucre", type: "check" },
+      { label: "Papeterie alu", type: "check" },
+      { label: "Papeterie Saran (pellicule alimentaire)", type: "check" },
+      { label: "Rouleaux collants (poils)", threshold: "plus que 2", type: "check-qty" },
+      { label: "Éponge magique (pour SDB)", threshold: "plus que 2", type: "check-qty" },
+      { label: "Sacs à poubelle grand cuisine", threshold: "plus que 1 rouleau", type: "check-qty" },
+      { label: "Sacs à recyclage", threshold: "plus que 1 paquet", type: "check-qty" },
+      { label: "Sacs poubelle petit (pour SDB)", threshold: "plus que 2", type: "check-qty" },
+      { label: "Petite vache", type: "check" },
+    ]
+  }
+];
+
+let currentSector = null;
+let currentChalet = null;
+let itemData = {};
+
+// ---- INIT ----
+function init() {
+  // Set today's date
+  document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+  renderSectors();
+}
+
+function renderSectors() {
+  const grid = document.getElementById('sectorGrid');
+  grid.innerHTML = '';
+  Object.entries(SECTORS).forEach(([name, chalets]) => {
+    const card = document.createElement('div');
+    card.className = 'sector-card';
+    card.innerHTML = `<div class="sector-icon">${SECTOR_ICONS[name] || '🏡'}</div>
+      <div class="sector-name">${name}</div>
+      <div class="sector-count">${chalets.length} chalet${chalets.length > 1 ? 's' : ''}</div>`;
+    card.onclick = () => showChalets(name);
+    grid.appendChild(card);
+  });
+}
+
+function showChalets(sector) {
+  currentSector = sector;
+  document.getElementById('sectorTitle').textContent = SECTOR_ICONS[sector] + ' ' + sector;
+  document.getElementById('sectorSubtitle').textContent = SECTORS[sector].length + ' chalet(s) dans ce secteur';
+  const list = document.getElementById('chaletList');
+  list.innerHTML = '';
+  SECTORS[sector].forEach(name => {
+    const item = document.createElement('div');
+    item.className = 'chalet-item';
+    item.innerHTML = `<div class="chalet-name">${name}</div><div class="chalet-arrow">›</div>`;
+    item.onclick = () => showChecklist(name);
+    list.appendChild(item);
+  });
+  showPage('page-chalets');
+}
+
+function showChecklist(chalet) {
+  currentChalet = chalet;
+  itemData = {};
+  document.getElementById('chaletHeading').textContent = '🏡 ' + chalet;
+  document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+  renderChecklist();
+  showPage('page-checklist');
+}
+
+function renderChecklist() {
+  const body = document.getElementById('checklistBody');
+  body.innerHTML = '';
+  CHECKLIST.forEach((section, si) => {
+    const sec = document.createElement('div');
+    sec.className = 'cl-section';
+    sec.innerHTML = `<div class="cl-section-title">${section.section}</div>`;
+    section.items.forEach((item, ii) => {
+      const id = `${si}_${ii}`;
+      itemData[id] = { label: item.label, threshold: item.threshold || null, yes: false, no: false, qty: '', note: '' };
+      const div = document.createElement('div');
+      div.className = 'cl-item' + (item.type === 'check-bonbonne' ? ' cl-item-special' : '');
+      if (item.type === 'check-bonbonne') {
+        div.innerHTML = `
+          <div class="cl-item-top">
+            <div class="cl-item-label">${item.label}</div>
+            <div class="cl-checks">
+              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
+              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
+            </div>
+          </div>
+          <div class="qty-row">
+            <label>% restant :</label>
+            <input class="qty-input" type="number" min="0" max="100" placeholder="%" id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+          </div>`;
+      } else if (item.type === 'check-qty') {
+        div.innerHTML = `
+          <div class="cl-item-top">
+            <div class="cl-item-label">${item.label}${item.threshold ? `<span class="threshold">→ ${item.threshold}</span>` : ''}</div>
+            <div class="cl-checks">
+              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
+              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
+            </div>
+          </div>
+          <div class="qty-row">
+            <label>Qté :</label>
+            <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+          </div>`;
+      } else {
+        div.innerHTML = `
+          <div class="cl-item-top">
+            <div class="cl-item-label">${item.label}${item.threshold ? `<span class="threshold">→ ${item.threshold}</span>` : ''}</div>
+            <div class="cl-checks">
+              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
+              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
+            </div>
+          </div>`;
+      }
+      sec.appendChild(div);
+    });
+    body.appendChild(sec);
+  });
+}
+
+function toggle(id, which) {
+  const d = itemData[id];
+  if (which === 'yes') {
+    d.yes = !d.yes;
+    if (d.yes) d.no = false;
+  } else {
+    d.no = !d.no;
+    if (d.no) d.yes = false;
+  }
+  const yb = document.getElementById('y_' + id);
+  const nb = document.getElementById('n_' + id);
+  yb.className = 'check-btn' + (d.yes ? ' yes' : '');
+  nb.className = 'check-btn' + (d.no ? ' no' : '');
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  const isChecklist = pageId === 'page-checklist';
+  const isChalets = pageId === 'page-chalets';
+  const btn = document.getElementById('backBtn');
+  if (isChecklist || isChalets) {
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+  window.scrollTo(0, 0);
+}
+
+function goBack() {
+  const checklist = document.getElementById('page-checklist');
+  if (checklist.classList.contains('active')) {
+    showPage('page-chalets');
+  } else {
+    showPage('page-sectors');
+  }
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ---- PDF GENERATION ----
+function buildPDFContent(doc) {
+  const { jsPDF } = window.jspdf;
+  const employeeName = document.getElementById('employeeName').value || '—';
+  const visitDate = document.getElementById('visitDate').value || new Date().toISOString().split('T')[0];
+  const dateFormatted = visitDate.split('-').reverse().join('/');
+
+  let y = 15;
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 14;
+  const colW = pageW - margin * 2;
+
+  // Header
+  doc.setFillColor(78, 114, 96);
+  doc.rect(0, 0, pageW, 38, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Au-delà du Chalet', margin, 14);
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Liste de vérification · Entretien', margin, 22);
+  
+  // Chalet name
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text(currentChalet || '', margin, 33);
+
+  y = 46;
+  doc.setTextColor(50, 70, 50);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Employé(e) : ${employeeName}     Date : ${dateFormatted}`, margin, y);
+  y += 8;
+
+  // Sections
+  CHECKLIST.forEach((section, si) => {
+    // Check if new page needed
+    if (y > 270) { doc.addPage(); y = 15; }
+
+    // Section header
+    doc.setFillColor(78, 114, 96);
+    doc.roundedRect(margin, y, colW, 7, 1, 1, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(section.section.toUpperCase(), margin + 3, y + 5);
+    y += 10;
+
+    section.items.forEach((item, ii) => {
+      if (y > 275) { doc.addPage(); y = 15; }
+      const id = `${si}_${ii}`;
+      const d = itemData[id] || {};
+      const statusY = d.yes ? '✓' : (d.no ? '✗' : '○');
+      const statusC = d.yes ? [58, 158, 95] : (d.no ? [224, 82, 82] : [180, 180, 180]);
+
+      // Alternating row
+      if (ii % 2 === 0) {
+        doc.setFillColor(234, 242, 236);
+        doc.rect(margin, y - 1, colW, 6.5, 'F');
+      }
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(50, 60, 50);
+      const labelLines = doc.splitTextToSize(item.label, colW - 30);
+      doc.text(labelLines, margin + 2, y + 4);
+
+      // Status circle
+      doc.setFillColor(...statusC);
+      doc.circle(margin + colW - 5, y + 3, 2.5, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(7);
+      doc.text(statusY, margin + colW - 6.3, y + 4.5);
+
+      let rowH = Math.max(6.5, labelLines.length * 4.5);
+
+      if (item.threshold) {
+        doc.setTextColor(100, 140, 110);
+        doc.setFontSize(7);
+        doc.text(`→ ${item.threshold}`, margin + 2, y + rowH);
+        rowH += 4;
+      }
+      if ((item.type === 'check-qty' || item.type === 'check-bonbonne') && d.qty) {
+        doc.setTextColor(70, 90, 70);
+        doc.setFontSize(7);
+        doc.text(`Qté : ${d.qty}${item.type === 'check-bonbonne' ? '%' : ''}`, margin + 2, y + rowH);
+        rowH += 4;
+      }
+
+      y += rowH + 1;
+    });
+    y += 4;
+  });
+
+  // Notes
+  const notesVal = document.getElementById('notesField') ? document.getElementById('notesField').value.trim() : '';
+  if(notesVal){
+    if(y > 240){ doc.addPage(); y = 15; }
+    doc.setFillColor(78,114,96);
+    doc.roundedRect(margin, y, colW, 7, 1, 1, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.text('NOTES', margin+3, y+5);
+    y += 10;
+    doc.setTextColor(50,60,50);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8.5);
+    const noteLines = doc.splitTextToSize(notesVal, colW-4);
+    noteLines.forEach(line => {
+      if(y > 278){ doc.addPage(); y = 15; }
+      doc.text(line, margin+2, y);
+      y += 5;
+    });
+    y += 4;
+  }
+
+  // Footer
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(150, 160, 150);
+    doc.text(`Au-delà du Chalet · ${currentChalet} · ${dateFormatted} · Page ${i}/${totalPages}`, margin, 292);
+  }
+}
+
+async function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  buildPDFContent(doc);
+  return doc;
+}
+
+async function savePDF() {
+  try {
+    showToast('⏳ Génération du PDF...');
+    const doc = await generatePDF();
+    const filename = `checklist_${(currentChalet || 'chalet').replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    showToast('✅ PDF sauvegardé avec succès !');
+  } catch(e) {
+    showToast('❌ Erreur lors de la génération PDF');
+    console.error(e);
+  }
+}
+
+async function sendEmail() {
+  const employeeName = document.getElementById('employeeName').value;
+  if (!employeeName.trim()) {
+    showToast('⚠️ Veuillez entrer le nom de l\'employé(e)');
+    document.getElementById('employeeName').focus();
+    return;
+  }
+  try {
+    showToast('⏳ Préparation du courriel...');
+    const doc = await generatePDF();
+    const pdfData = doc.output('datauristring');
+    const dateStr = document.getElementById('visitDate').value || new Date().toISOString().split('T')[0];
+    const dateFormatted = dateStr.split('-').reverse().join('/');
+    
+    // Build email body text
+    let body = `Bonjour,\n\nVeuillez trouver ci-joint la liste de vérification pour le chalet "${currentChalet}" (secteur : ${currentSector}).\n\nEmployé(e) : ${employeeName}\nDate : ${dateFormatted}\n\n--- RÉSUMÉ ---\n`;
+    
+    CHECKLIST.forEach((section, si) => {
+      body += `\n${section.section}:\n`;
+      section.items.forEach((item, ii) => {
+        const id = `${si}_${ii}`;
+        const d = itemData[id] || {};
+        const status = d.yes ? 'OUI ✓' : (d.no ? 'NON ✗' : 'N/A');
+        body += `  • ${item.label}: ${status}`;
+        if (d.qty) body += ` (Qté: ${d.qty})`;
+        body += '\n';
+      });
+    });
+    
+    const notesEmailVal = document.getElementById('notesField') ? document.getElementById('notesField').value.trim() : '';
+    if(notesEmailVal){ body += `\n\n--- NOTES ---\n${notesEmailVal}`; }
+    body += `\n---\nEnvoyé depuis l'app Au-delà du Chalet`;
+    
+    const subject = encodeURIComponent(`Checklist ${currentChalet} – ${dateFormatted} – ${employeeName}`);
+    const bodyEncoded = encodeURIComponent(body);
+    
+    // Open mail client with mailto
+    window.location.href = `mailto:alexguerard24@gmail.com?subject=${subject}&body=${bodyEncoded}`;
+    
+    // Also trigger download of PDF so they can attach it
+    setTimeout(() => {
+      doc.save(`checklist_${(currentChalet || 'chalet').replace(/\s+/g, '_')}_${dateStr}.pdf`);
+      showToast('📎 PDF généré – Joignez-le à votre courriel !', 5000);
+    }, 500);
+    
+  } catch(e) {
+    showToast('❌ Erreur lors de l\'envoi');
+    console.error(e);
+  }
+}
+
+
+// ===== ADMIN =====
+const ADMIN_PW = "addc123";
+let admUnlocked = false;
+
+function openAdmin(){
+  document.getElementById('admModal').classList.add('open');
+  document.getElementById('pwInput').value='';
+  document.getElementById('pwErr').style.display='none';
+  if(admUnlocked){
+    document.getElementById('pwWrap').style.display='none';
+    document.getElementById('admWrap').classList.add('on');
+  } else {
+    document.getElementById('pwWrap').style.display='block';
+    document.getElementById('admWrap').classList.remove('on');
+  }
+}
+function closeAdmin(){ document.getElementById('admModal').classList.remove('open'); }
+document.addEventListener('click', e=>{ if(e.target.id==='admModal') closeAdmin(); });
+
+function checkPw(){
+  if(document.getElementById('pwInput').value === ADMIN_PW){
+    admUnlocked = true;
+    document.getElementById('pwWrap').style.display='none';
+    document.getElementById('admWrap').classList.add('on');
+    admPopulateSec(); admRenderChalets(); admRenderSectors();
+  } else {
+    document.getElementById('pwErr').style.display='block';
+    document.getElementById('pwInput').value='';
+  }
+}
+
+function admSwitch(name, btn){
+  document.querySelectorAll('.adm-tab-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.adm-pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('admp-'+name).classList.add('on');
+}
+
+function admPopulateSec(){
+  const sel = document.getElementById('admSelSec');
+  sel.innerHTML = Object.keys(SECTORS).map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+
+function admRenderChalets(){
+  const s = document.getElementById('admSelSec').value;
+  const list = document.getElementById('admChaletList');
+  if(!s||!SECTORS[s]){list.innerHTML='';return;}
+  list.innerHTML = SECTORS[s].map((c,i)=>
+    `<div class="adm-item"><span>${c}</span><button class="adm-del" onclick="admDelChalet('${s.replace(/'/g,"\\'")}',${i})">🗑️</button></div>`
+  ).join('');
+}
+
+function admAddChalet(){
+  const s = document.getElementById('admSelSec').value;
+  const n = document.getElementById('admNewChalet').value.trim();
+  if(!n){showToast('⚠️ Entrez un nom de chalet');return;}
+  if(!SECTORS[s]) SECTORS[s]=[];
+  SECTORS[s].push(n);
+  admSave(); document.getElementById('admNewChalet').value='';
+  admRenderChalets(); renderSectors();
+  showToast('✅ Chalet ajouté : '+n);
+}
+
+function admDelChalet(s,i){
+  const n=SECTORS[s][i];
+  SECTORS[s].splice(i,1);
+  admSave(); admRenderChalets(); renderSectors();
+  showToast('🗑️ '+n+' supprimé');
+}
+
+function admRenderSectors(){
+  document.getElementById('admSecList').innerHTML = Object.entries(SECTORS).map(([s,ch])=>
+    `<div class="adm-item"><span>${SECTOR_ICONS[s]||'🏡'} ${s} <span style="color:var(--text-light);font-weight:400;">(${ch.length})</span></span><button class="adm-del" onclick="admDelSector('${s.replace(/'/g,"\\'")}')">🗑️</button></div>`
+  ).join('');
+}
+
+function generateEmote(n){
+  n=n.toLowerCase();
+  if(n.includes('lac')||n.includes('lake')) return '🏞️';
+  if(n.includes('mont')||n.includes('sommet')) return '⛰️';
+  if(n.includes('bois')||n.includes('forêt')||n.includes('foret')) return '🌲';
+  if(n.includes('rivière')||n.includes('chute')) return '💧';
+  if(n.includes('étoile')||n.includes('etoile')) return '⭐';
+  if(n.includes('loup')||n.includes('wolf')) return '🐺';
+  if(n.includes('castor')) return '🦫';
+  if(n.includes('harfang')||n.includes('aigle')) return '🦅';
+  if(n.includes('ours')) return '🐻';
+  if(n.includes('rêve')||n.includes('paradis')) return '✨';
+  if(n.includes('soleil')) return '☀️';
+  if(n.includes('neige')||n.includes('hiver')) return '❄️';
+  if(n.includes('automne')||n.includes('feuille')) return '🍂';
+  if(n.includes('nord')) return '🧭';
+  return '🏡';
+}
+function updateEmote(){ document.getElementById('emotePrev').textContent=generateEmote(document.getElementById('admNewSec').value); }
+
+function admAddSector(){
+  const n=document.getElementById('admNewSec').value.trim();
+  if(!n){showToast('⚠️ Entrez un nom de secteur');return;}
+  if(SECTORS[n]){showToast('⚠️ Ce secteur existe déjà');return;}
+  const e=generateEmote(n);
+  SECTORS[n]=[]; SECTOR_ICONS[n]=e;
+  admSave(); document.getElementById('admNewSec').value=''; document.getElementById('emotePrev').textContent='🏡';
+  admPopulateSec(); admRenderSectors(); renderSectors();
+  showToast('✅ Secteur ajouté : '+e+' '+n);
+}
+
+function admDelSector(s){
+  if(!confirm('Supprimer le secteur "'+s+'" et tous ses chalets ?')) return;
+  delete SECTORS[s]; delete SECTOR_ICONS[s];
+  admSave(); admPopulateSec(); admRenderChalets(); admRenderSectors(); renderSectors();
+  showToast('🗑️ Secteur "'+s+'" supprimé');
+}
+
+function admSave(){
+  localStorage.setItem('addc_sectors', JSON.stringify(SECTORS));
+  localStorage.setItem('addc_icons', JSON.stringify(SECTOR_ICONS));
+}
+
+init();
+</script>
+
+<div class="modal-overlay" id="admModal">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h2>⚙️ Administration</h2>
+      <button class="modal-close-btn" onclick="closeAdmin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="pw-wrap" id="pwWrap">
+        <p>🔒 Entrez le mot de passe administrateur</p>
+        <input type="password" class="pw-input" id="pwInput" placeholder="••••••••" onkeyup="if(event.key==='Enter')checkPw()">
+        <br><button class="pw-go" onclick="checkPw()">Accéder</button>
+        <div class="pw-err" id="pwErr">❌ Mot de passe incorrect</div>
+      </div>
+      <div class="adm-wrap" id="admWrap">
+        <div class="adm-tabs">
+          <button class="adm-tab-btn on" onclick="admSwitch('chalets',this)">🏠 Chalets</button>
+          <button class="adm-tab-btn" onclick="admSwitch('sectors',this)">📍 Secteurs</button>
+        </div>
+        <div class="adm-pane on" id="admp-chalets">
+          <label class="adm-lbl">Secteur</label>
+          <select class="adm-sel" id="admSelSec" onchange="admRenderChalets()"></select>
+          <label class="adm-lbl">Nom du nouveau chalet</label>
+          <input type="text" class="adm-inp" id="admNewChalet" placeholder="Ex: Le Refuge des Pins...">
+          <button class="adm-add" onclick="admAddChalet()">+ Ajouter ce chalet</button>
+          <hr class="adm-hr">
+          <div class="adm-sub">Chalets dans ce secteur</div>
+          <div id="admChaletList"></div>
+        </div>
+        <div class="adm-pane" id="admp-sectors">
+          <label class="adm-lbl">Nom du nouveau secteur</label>
+          <div class="emote-row">
+            <input type="text" class="adm-inp" id="admNewSec" placeholder="Ex: St-Michel-des-Saints..." oninput="updateEmote()">
+            <div class="emote-box" id="emotePrev">🏡</div>
+          </div>
+          <button class="adm-add" onclick="admAddSector()">+ Ajouter ce secteur</button>
+          <hr class="adm-hr">
+          <div class="adm-sub">Secteurs existants</div>
+          <div id="admSecList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
