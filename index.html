@@ -1027,9 +1027,11 @@ function admSave(){
 
 async function syncFromServer(){
   try {
-    const r = await fetch(API_URL);
+    const r = await fetch(API_URL + '?t=' + Date.now());
     const d = await r.json();
     if(d.sectors && Object.keys(d.sectors).length > 0){
+      Object.keys(SECTORS).forEach(k => delete SECTORS[k]);
+      Object.keys(SECTOR_ICONS).forEach(k => delete SECTOR_ICONS[k]);
       Object.assign(SECTORS, d.sectors);
       Object.assign(SECTOR_ICONS, d.icons || {});
       localStorage.setItem('addc_sectors', JSON.stringify(SECTORS));
