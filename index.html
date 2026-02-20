@@ -351,7 +351,13 @@
   .adm-del{background:none;border:none;color:var(--no);cursor:pointer;font-size:1.1rem;padding:2px 6px;}
   .emote-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
   .emote-row .adm-inp{margin-bottom:0;flex:1;}
-  .emote-box{font-size:1.3rem;width:44px;text-align:center;padding:9px;border:1.5px solid var(--sage-light);border-radius:8px;background:var(--sage-pale);flex-shrink:0;}
+  .emote-box{font-size:1.3rem;width:44px;text-align:center;padding:9px;border:1.5px solid var(--sage-light);border-radius:8px;background:var(--sage-pale);flex-shrink:0;cursor:pointer;}
+  .emote-box:hover{border-color:var(--sage);background:var(--sage-light);}
+  .emoji-picker{display:none;flex-wrap:wrap;gap:6px;padding:10px;background:white;border:1.5px solid var(--sage-light);border-radius:12px;margin-bottom:8px;}
+  .emoji-picker.open{display:flex;}
+  .emoji-opt{font-size:1.4rem;padding:4px 6px;cursor:pointer;border-radius:8px;border:2px solid transparent;transition:all 0.15s;}
+  .emoji-opt:hover{background:var(--sage-pale);border-color:var(--sage-light);}
+  .emoji-opt.selected{background:var(--sage-pale);border-color:var(--sage);}
 
 </style>
 </head>
@@ -513,6 +519,19 @@ const CHECKLIST = [
       { label: "pH+", type: "check-qty" },
       { label: "pH-", type: "check-qty" },
       { label: "Alka+", type: "check-qty" },
+      { label: "Alka-", type: "check-qty" },
+      { label: "Anti Tarte", type: "check-qty" },
+      { label: "Metal-out", type: "check-qty" },
+      { label: "3 en 1 Mauve", type: "check-qty" },
+      { label: "Sensation Confort", type: "check-qty" },
+      { label: "Pastille Clarifiant", type: "check-qty" },
+      { label: "Phos", type: "check-qty" },
+      { label: "Calcium", type: "check-qty" },
+      { label: "Bandelette Spa", type: "check-qty" },
+      { label: "Nettoyant Filtre", type: "check-qty" },
+      { label: "Spa-Vac", type: "check" },
+      { label: "Filet-Spa", type: "check" },
+      { label: "Filtre", type: "check-qty-serial" },
     ]
   },
   {
@@ -622,6 +641,23 @@ function renderChecklist() {
             <label>% restant :</label>
             <input class="qty-input" type="number" min="0" max="100" placeholder="%" id="q_${id}" oninput="itemData['${id}'].qty=this.value">
           </div>`;
+      } else if (item.type === 'check-qty-serial') {
+        div.innerHTML = `
+          <div class="cl-item-top">
+            <div class="cl-item-label">${item.label}</div>
+            <div class="cl-checks">
+              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
+              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
+            </div>
+          </div>
+          <div class="qty-row">
+            <label>Qté :</label>
+            <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+          </div>
+          <div class="qty-row">
+            <label># Série :</label>
+            <input class="text-input" type="text" placeholder="numéro de série..." id="s_${id}" oninput="itemData['${id}'].note=this.value">
+          </div>`;
       } else if (item.type === 'check-qty') {
         div.innerHTML = `
           <div class="cl-item-top">
@@ -680,9 +716,16 @@ function showPage(pageId) {
   window.scrollTo(0, 0);
 }
 
+function hasProgress() {
+  return Object.values(itemData).some(d => d.yes || d.no || d.qty || d.note);
+}
+
 function goBack() {
   const checklist = document.getElementById('page-checklist');
   if (checklist.classList.contains('active')) {
+    if (hasProgress() && !confirm('⚠️ Vous avez de la progression non sauvegardée.\n\nÊtes-vous sûr de vouloir quitter ? La progression sera perdue.')) {
+      return;
+    }
     showPage('page-chalets');
   } else {
     showPage('page-sectors');
@@ -972,35 +1015,38 @@ function admRenderSectors(){
   ).join('');
 }
 
-function generateEmote(n){
-  n=n.toLowerCase();
-  if(n.includes('lac')||n.includes('lake')) return '🏞️';
-  if(n.includes('mont')||n.includes('sommet')) return '⛰️';
-  if(n.includes('bois')||n.includes('forêt')||n.includes('foret')) return '🌲';
-  if(n.includes('rivière')||n.includes('chute')) return '💧';
-  if(n.includes('étoile')||n.includes('etoile')) return '⭐';
-  if(n.includes('loup')||n.includes('wolf')) return '🐺';
-  if(n.includes('castor')) return '🦫';
-  if(n.includes('harfang')||n.includes('aigle')) return '🦅';
-  if(n.includes('ours')) return '🐻';
-  if(n.includes('rêve')||n.includes('paradis')) return '✨';
-  if(n.includes('soleil')) return '☀️';
-  if(n.includes('neige')||n.includes('hiver')) return '❄️';
-  if(n.includes('automne')||n.includes('feuille')) return '🍂';
-  if(n.includes('nord')) return '🧭';
-  return '🏡';
+const EMOJI_LIST = ['🏡','🏔️','🌲','⭐','🌿','🦫','🐺','🍂','✨','💧','🏊','📍','🏕️','🌊','❄️','☀️','🌸','🍁','🏞️','⛰️','🌙','🔥','🦅','🐻','🌺','🎿','⛷️','🚤','🌾','🛖'];
+let selectedEmoji = '🏡';
+
+function initEmojiPicker(){
+  const picker = document.getElementById('emojiPicker');
+  picker.innerHTML = EMOJI_LIST.map(e =>
+    `<span class="emoji-opt${e===selectedEmoji?' selected':''}" onclick="selectEmoji('${e}')">${e}</span>`
+  ).join('');
 }
-function updateEmote(){ document.getElementById('emotePrev').textContent=generateEmote(document.getElementById('admNewSec').value); }
+
+function toggleEmojiPicker(){
+  const picker = document.getElementById('emojiPicker');
+  picker.classList.toggle('open');
+  if(picker.classList.contains('open')) initEmojiPicker();
+}
+
+function selectEmoji(e){
+  selectedEmoji = e;
+  document.getElementById('emotePrev').textContent = e;
+  document.querySelectorAll('.emoji-opt').forEach(el => el.classList.toggle('selected', el.textContent === e));
+  document.getElementById('emojiPicker').classList.remove('open');
+}
 
 function admAddSector(){
   const n=document.getElementById('admNewSec').value.trim();
   if(!n){showToast('⚠️ Entrez un nom de secteur');return;}
   if(SECTORS[n]){showToast('⚠️ Ce secteur existe déjà');return;}
-  const e=generateEmote(n);
-  SECTORS[n]=[]; SECTOR_ICONS[n]=e;
-  admSave(); document.getElementById('admNewSec').value=''; document.getElementById('emotePrev').textContent='🏡';
+  SECTORS[n]=[]; SECTOR_ICONS[n]=selectedEmoji;
+  admSave(); document.getElementById('admNewSec').value=''; 
+  document.getElementById('emotePrev').textContent='🏡'; selectedEmoji='🏡';
   admPopulateSec(); admRenderSectors(); renderSectors();
-  showToast('✅ Secteur ajouté : '+e+' '+n);
+  showToast('✅ Secteur ajouté : '+selectedEmoji+' '+n);
 }
 
 function admDelSector(s){
@@ -1076,9 +1122,10 @@ init();
         <div class="adm-pane" id="admp-sectors">
           <label class="adm-lbl">Nom du nouveau secteur</label>
           <div class="emote-row">
-            <input type="text" class="adm-inp" id="admNewSec" placeholder="Ex: St-Michel-des-Saints..." oninput="updateEmote()">
-            <div class="emote-box" id="emotePrev">🏡</div>
+            <input type="text" class="adm-inp" id="admNewSec" placeholder="Ex: St-Michel-des-Saints...">
+            <div class="emote-box" id="emotePrev" onclick="toggleEmojiPicker()">🏡</div>
           </div>
+          <div class="emoji-picker" id="emojiPicker"></div>
           <button class="adm-add" onclick="admAddSector()">+ Ajouter ce secteur</button>
           <hr class="adm-hr">
           <div class="adm-sub">Secteurs existants</div>
