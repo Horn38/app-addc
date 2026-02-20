@@ -1010,11 +1010,36 @@ function admDelSector(s){
   showToast('🗑️ Secteur "'+s+'" supprimé');
 }
 
+const API_URL = 'https://addc.smddesign.ca/addc/api.php';
+
 function admSave(){
   localStorage.setItem('addc_sectors', JSON.stringify(SECTORS));
   localStorage.setItem('addc_icons', JSON.stringify(SECTOR_ICONS));
+  // Sync vers le serveur
+  fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({sectors: SECTORS, icons: SECTOR_ICONS})
+  }).then(r => r.json()).then(d => {
+    if(d.status === 'ok') showToast('☁️ Synchronisé avec le serveur');
+  }).catch(() => showToast('⚠️ Sauvegardé localement seulement'));
 }
 
+async function syncFromServer(){
+  try {
+    const r = await fetch(API_URL);
+    const d = await r.json();
+    if(d.sectors && Object.keys(d.sectors).length > 0){
+      Object.assign(SECTORS, d.sectors);
+      Object.assign(SECTOR_ICONS, d.icons || {});
+      localStorage.setItem('addc_sectors', JSON.stringify(SECTORS));
+      localStorage.setItem('addc_icons', JSON.stringify(SECTOR_ICONS));
+      renderSectors();
+    }
+  } catch(e) { /* offline - utilise données locales */ }
+}
+
+syncFromServer();
 init();
 </script>
 
