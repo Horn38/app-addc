@@ -1,4 +1,4 @@
-const CACHE_NAME = 'addc-v2';
+const CACHE_NAME = 'addc-v3';
 const FILES_TO_CACHE = [
   '/app-addc/',
   '/app-addc/index.html',
