@@ -374,6 +374,7 @@
     <div class="sub">Entretien · Inspection</div>
   </div>
   <button class="back-btn" id="backBtn" onclick="goBack()">← Retour</button>
+  <button class="back-btn" id="saveBtn" onclick="saveAllInventory()" style="display:none;background:rgba(59,130,246,0.85);">💾 Sauvegarder</button>
   <button onclick="openAdmin()" style="margin-left:auto;background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.5);color:white;padding:6px 13px;border-radius:20px;font-family:'Nunito',sans-serif;font-size:0.75rem;font-weight:700;cursor:pointer;">⚙️ Admin</button>
 </div>
 
@@ -509,7 +510,6 @@ const CHECKLIST = [
       { label: "Mitaine four", type: "check" },
       { label: "Piège à fourmis", type: "check" },
       { label: "Pièges à souris", type: "check" },
-      { label: "Filtre spa", type: "check" },
     ]
   },
   {
@@ -541,10 +541,21 @@ const CHECKLIST = [
     section: "Produits spécifiques selon les caractéristiques du chalet",
     items: [
       { label: "Produit nettoyant stainless en spray (si surface inox)", threshold: "plus que ½ bouteille", type: "check-qty" },
-      { label: "CLR en bidon (si eau ferreuse – toilettes et douches)", type: "check" },
-      { label: "Plat alu pour gras BBQ au four", type: "check" },
+      { label: "CLR en bidon (si eau ferreuse – toilettes et douches)", type: "check-qty" },
+      { label: "Plat alu pour gras BBQ au four", type: "check-qty" },
       { label: "Brosse à BBQ", type: "check" },
-      { label: "Bonbonne à remplir", type: "check-bonbonne" },
+      { label: "Propane Bonbonne 1", type: "check-bonbonne" },
+      { label: "Propane Bonbonne 2", type: "check-bonbonne" },
+      { label: "Propane Bonbonne 3", type: "check-bonbonne" },
+    ]
+  },
+  {
+    section: "Bois / Chauffage",
+    items: [
+      { label: "Bois intérieur", type: "check" },
+      { label: "Bois extérieur", type: "check" },
+      { label: "Allume-feu", type: "check" },
+      { label: "Papier journal / Petits bois d'allumage", type: "check" },
     ]
   },
   {
@@ -613,6 +624,7 @@ function showChalets(sector) {
 async function showChecklist(chalet) {
   currentChalet = chalet;
   itemData = {};
+  inventorySaved = false;
   document.getElementById('chaletHeading').textContent = '🏡 ' + chalet;
   document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
   renderChecklist();
@@ -634,6 +646,16 @@ async function showChecklist(chalet) {
             itemData[id].note = inv[id].note;
             const s = document.getElementById('s_' + id);
             if(s) s.value = inv[id].note;
+          }
+          if(inv[id].yes) {
+            itemData[id].yes = true;
+            const yb = document.getElementById('y_' + id);
+            if(yb) yb.className = 'check-btn yes';
+          }
+          if(inv[id].no) {
+            itemData[id].no = true;
+            const nb = document.getElementById('n_' + id);
+            if(nb) nb.className = 'check-btn no';
           }
         }
       });
@@ -657,47 +679,36 @@ function renderChecklist() {
         div.innerHTML = `
           <div class="cl-item-top">
             <div class="cl-item-label">${item.label}</div>
-            <div class="cl-checks">
-              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
-              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
-            </div>
           </div>
           <div class="qty-row">
             <label>% restant :</label>
             <input class="qty-input" type="number" min="0" max="100" placeholder="%" id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+            
           </div>`;
       } else if (item.type === 'check-qty-serial') {
         div.innerHTML = `
           <div class="cl-item-top">
             <div class="cl-item-label">${item.label}</div>
-            <div class="cl-checks">
-              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
-              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
-            </div>
           </div>
           <div class="qty-row">
             <label>Qté :</label>
             <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
-            <button class="confirm-btn" onclick="saveInventoryItem('${id}','qty')">💾</button>
+            
           </div>
           <div class="qty-row">
             <label># Série :</label>
             <input class="text-input" type="text" placeholder="numéro de série..." id="s_${id}" oninput="itemData['${id}'].note=this.value" style="flex:1">
-            <button class="confirm-btn" onclick="saveInventoryItem('${id}','note')" style="margin-top:4px">💾</button>
+            
           </div>`;
       } else if (item.type === 'check-qty') {
         div.innerHTML = `
           <div class="cl-item-top">
             <div class="cl-item-label">${item.label}${item.threshold ? `<span class="threshold">→ ${item.threshold}</span>` : ''}</div>
-            <div class="cl-checks">
-              <button class="check-btn" id="y_${id}" onclick="toggle('${id}','yes')">✓</button>
-              <button class="check-btn" id="n_${id}" onclick="toggle('${id}','no')">✗</button>
-            </div>
           </div>
           <div class="qty-row">
             <label>Qté :</label>
             <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
-            <button class="confirm-btn" onclick="saveInventoryItem('${id}','qty')">💾</button>
+            
           </div>`;
       } else {
         div.innerHTML = `
@@ -736,24 +747,34 @@ function showPage(pageId) {
   const isChecklist = pageId === 'page-checklist';
   const isChalets = pageId === 'page-chalets';
   const btn = document.getElementById('backBtn');
+  const saveBtn = document.getElementById('saveBtn');
   if (isChecklist || isChalets) {
     btn.classList.add('visible');
   } else {
     btn.classList.remove('visible');
   }
+  saveBtn.style.display = isChecklist ? 'flex' : 'none';
   window.scrollTo(0, 0);
 }
 
-function hasProgress() {
-  return Object.values(itemData).some(d => d.yes || d.no || d.qty || d.note);
+let inventorySaved = false;
+
+function hasUnsavedInventory() {
+  return Object.values(itemData).some(d => d.qty || d.note);
 }
 
 function goBack() {
   const checklist = document.getElementById('page-checklist');
   if (checklist.classList.contains('active')) {
-    if (hasProgress() && !confirm('⚠️ Vous avez de la progression non sauvegardée.\n\nÊtes-vous sûr de vouloir quitter ? La progression sera perdue.')) {
+    if (!inventorySaved && hasUnsavedInventory()) {
+      // Popup custom avec option sauvegarder
+      const choice = confirm('⚠️ Vous avez des quantités non sauvegardées.\n\nAppuyez sur OK pour sauvegarder et quitter.\nAppuyez sur Annuler pour rester sur la page.');
+      if (choice) {
+        saveAllInventory(true);
+      }
       return;
     }
+    inventorySaved = false;
     showPage('page-chalets');
   } else {
     showPage('page-sectors');
@@ -1084,23 +1105,35 @@ function admDelSector(s){
   showToast('🗑️ Secteur "'+s+'" supprimé');
 }
 
-async function saveInventoryItem(id, field) {
-  const val = field === 'qty' ? itemData[id].qty : itemData[id].note;
-  if(!val) return;
+async function saveAllInventory(thenGoBack = false) {
+  const btn = document.getElementById('saveBtn');
+  btn.style.background = 'rgba(59,130,246,0.85)';
+  btn.textContent = '⏳ Sauvegarde...';
   try {
     const r = await fetch(API_URL + '?t=' + Date.now());
     const d = await r.json();
     const inventory = d.inventory || {};
     if(!inventory[currentChalet]) inventory[currentChalet] = {};
-    if(!inventory[currentChalet][id]) inventory[currentChalet][id] = {};
-    inventory[currentChalet][id][field] = val;
+    Object.keys(itemData).forEach(id => {
+      const item = itemData[id];
+      if(!inventory[currentChalet][id]) inventory[currentChalet][id] = {};
+      inventory[currentChalet][id].qty = item.qty || '';
+      inventory[currentChalet][id].note = item.note || '';
+      inventory[currentChalet][id].yes = item.yes || false;
+      inventory[currentChalet][id].no = item.no || false;
+    });
     await fetch(API_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({sectors: d.sectors || SECTORS, icons: d.icons || SECTOR_ICONS, inventory})
     });
-    showToast('💾 ' + itemData[id].label + ' sauvegardé !');
+    inventorySaved = true;
+    btn.textContent = '✅ Sauvegardé';
+    showToast('☁️ Inventaire sauvegardé sur le serveur !');
+    setTimeout(() => { btn.textContent = '💾 Sauvegarder'; }, 2000);
+    if(thenGoBack) { setTimeout(() => { inventorySaved = false; showPage('page-chalets'); }, 500); }
   } catch(e) {
+    btn.textContent = '💾 Sauvegarder';
     showToast('⚠️ Erreur de sauvegarde');
   }
 }
