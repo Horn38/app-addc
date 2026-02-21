@@ -358,6 +358,9 @@
   .emoji-opt{font-size:1.4rem;padding:4px 6px;cursor:pointer;border-radius:8px;border:2px solid transparent;transition:all 0.15s;}
   .emoji-opt:hover{background:var(--sage-pale);border-color:var(--sage-light);}
   .emoji-opt.selected{background:var(--sage-pale);border-color:var(--sage);}
+  .confirm-btn{background:var(--sage);color:white;border:none;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+  .confirm-btn:active{background:var(--sage-dark);}
+  .confirm-btn.saved{background:#3a9e5f;}
 
 </style>
 </head>
@@ -607,13 +610,35 @@ function showChalets(sector) {
   showPage('page-chalets');
 }
 
-function showChecklist(chalet) {
+async function showChecklist(chalet) {
   currentChalet = chalet;
   itemData = {};
   document.getElementById('chaletHeading').textContent = '🏡 ' + chalet;
   document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
   renderChecklist();
   showPage('page-checklist');
+  // Charger l'inventaire du serveur
+  try {
+    const r = await fetch(API_URL + '?t=' + Date.now());
+    const d = await r.json();
+    const inv = d.inventory && d.inventory[chalet];
+    if(inv) {
+      Object.keys(inv).forEach(id => {
+        if(itemData[id]) {
+          if(inv[id].qty) {
+            itemData[id].qty = inv[id].qty;
+            const q = document.getElementById('q_' + id);
+            if(q) q.value = inv[id].qty;
+          }
+          if(inv[id].note) {
+            itemData[id].note = inv[id].note;
+            const s = document.getElementById('s_' + id);
+            if(s) s.value = inv[id].note;
+          }
+        }
+      });
+    }
+  } catch(e) { /* offline */ }
 }
 
 function renderChecklist() {
@@ -653,10 +678,12 @@ function renderChecklist() {
           <div class="qty-row">
             <label>Qté :</label>
             <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+            <button class="confirm-btn" onclick="saveInventoryItem('${id}','qty')">💾</button>
           </div>
           <div class="qty-row">
             <label># Série :</label>
-            <input class="text-input" type="text" placeholder="numéro de série..." id="s_${id}" oninput="itemData['${id}'].note=this.value">
+            <input class="text-input" type="text" placeholder="numéro de série..." id="s_${id}" oninput="itemData['${id}'].note=this.value" style="flex:1">
+            <button class="confirm-btn" onclick="saveInventoryItem('${id}','note')" style="margin-top:4px">💾</button>
           </div>`;
       } else if (item.type === 'check-qty') {
         div.innerHTML = `
@@ -670,6 +697,7 @@ function renderChecklist() {
           <div class="qty-row">
             <label>Qté :</label>
             <input class="qty-input" type="text" placeholder="quantité..." id="q_${id}" oninput="itemData['${id}'].qty=this.value">
+            <button class="confirm-btn" onclick="saveInventoryItem('${id}','qty')">💾</button>
           </div>`;
       } else {
         div.innerHTML = `
@@ -1056,16 +1084,38 @@ function admDelSector(s){
   showToast('🗑️ Secteur "'+s+'" supprimé');
 }
 
+async function saveInventoryItem(id, field) {
+  const val = field === 'qty' ? itemData[id].qty : itemData[id].note;
+  if(!val) return;
+  try {
+    const r = await fetch(API_URL + '?t=' + Date.now());
+    const d = await r.json();
+    const inventory = d.inventory || {};
+    if(!inventory[currentChalet]) inventory[currentChalet] = {};
+    if(!inventory[currentChalet][id]) inventory[currentChalet][id] = {};
+    inventory[currentChalet][id][field] = val;
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sectors: d.sectors || SECTORS, icons: d.icons || SECTOR_ICONS, inventory})
+    });
+    showToast('💾 ' + itemData[id].label + ' sauvegardé !');
+  } catch(e) {
+    showToast('⚠️ Erreur de sauvegarde');
+  }
+}
+
 const API_URL = 'https://addc.smddesign.ca/addc/api.php';
 
 function admSave(){
   localStorage.setItem('addc_sectors', JSON.stringify(SECTORS));
   localStorage.setItem('addc_icons', JSON.stringify(SECTOR_ICONS));
-  // Sync vers le serveur
-  fetch(API_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({sectors: SECTORS, icons: SECTOR_ICONS})
+  fetch(API_URL + '?t=' + Date.now()).then(r=>r.json()).then(d => {
+    return fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({sectors: SECTORS, icons: SECTOR_ICONS, inventory: d.inventory || {}})
+    });
   }).then(r => r.json()).then(d => {
     if(d.status === 'ok') showToast('☁️ Synchronisé avec le serveur');
   }).catch(() => showToast('⚠️ Sauvegardé localement seulement'));
