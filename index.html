@@ -358,7 +358,16 @@
   .emoji-opt{font-size:1.4rem;padding:4px 6px;cursor:pointer;border-radius:8px;border:2px solid transparent;transition:all 0.15s;}
   .emoji-opt:hover{background:var(--sage-pale);border-color:var(--sage-light);}
   .emoji-opt.selected{background:var(--sage-pale);border-color:var(--sage);}
-  .confirm-btn{background:var(--sage);color:white;border:none;padding:5px 12px;border-radius:8px;font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+  .last-modified {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    background: var(--sage-pale);
+    border-radius: 8px;
+    padding: 7px 12px;
+    margin-top: 10px;
+    border-left: 3px solid var(--sage-light);
+  }
+  .last-modified strong { color: var(--sage-dark); }
   .confirm-btn:active{background:var(--sage-dark);}
   .confirm-btn.saved{background:#3a9e5f;}
 
@@ -409,6 +418,7 @@
         <input type="date" id="visitDate">
       </div>
     </div>
+    <div class="last-modified" id="lastModified" style="display:none;"></div>
   </div>
   <div class="checklist-body" id="checklistBody"></div>
   <div style="margin:0 16px 20px;background:white;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(74,114,96,0.13);">
@@ -627,6 +637,8 @@ async function showChecklist(chalet) {
   inventorySaved = false;
   document.getElementById('chaletHeading').textContent = '🏡 ' + chalet;
   document.getElementById('visitDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('employeeName').value = '';
+  document.getElementById('lastModified').style.display = 'none';
   renderChecklist();
   showPage('page-checklist');
   // Charger l'inventaire du serveur
@@ -659,6 +671,13 @@ async function showChecklist(chalet) {
           }
         }
       });
+      // Afficher dernière modification
+      const meta = d.inventory_meta && d.inventory_meta[chalet];
+      if(meta && meta.by) {
+        const lm = document.getElementById('lastModified');
+        lm.style.display = 'block';
+        lm.innerHTML = `✏️ Dernière modification par <strong>${meta.by}</strong> le <strong>${meta.date}</strong>`;
+      }
     }
   } catch(e) { /* offline */ }
 }
@@ -1106,6 +1125,12 @@ function admDelSector(s){
 }
 
 async function saveAllInventory(thenGoBack = false) {
+  const employeeName = document.getElementById('employeeName').value.trim();
+  if(!employeeName) {
+    showToast('⚠️ Entrez votre nom avant de sauvegarder !');
+    document.getElementById('employeeName').focus();
+    return;
+  }
   const btn = document.getElementById('saveBtn');
   btn.style.background = 'rgba(59,130,246,0.85)';
   btn.textContent = '⏳ Sauvegarde...';
@@ -1113,6 +1138,7 @@ async function saveAllInventory(thenGoBack = false) {
     const r = await fetch(API_URL + '?t=' + Date.now());
     const d = await r.json();
     const inventory = d.inventory || {};
+    const inventory_meta = d.inventory_meta || {};
     if(!inventory[currentChalet]) inventory[currentChalet] = {};
     Object.keys(itemData).forEach(id => {
       const item = itemData[id];
@@ -1122,13 +1148,22 @@ async function saveAllInventory(thenGoBack = false) {
       inventory[currentChalet][id].yes = item.yes || false;
       inventory[currentChalet][id].no = item.no || false;
     });
+    // Sauvegarder métadonnées
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-CA', {day:'2-digit', month:'2-digit', year:'numeric'});
+    inventory_meta[currentChalet] = { by: employeeName, date: dateStr };
     await fetch(API_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({sectors: d.sectors || SECTORS, icons: d.icons || SECTOR_ICONS, inventory})
+      body: JSON.stringify({sectors: d.sectors || SECTORS, icons: d.icons || SECTOR_ICONS, inventory, inventory_meta})
     });
     inventorySaved = true;
     btn.textContent = '✅ Sauvegardé';
+    // Mettre à jour l'affichage de la dernière modification
+    const lm = document.getElementById('lastModified');
+    lm.style.display = 'block';
+    lm.innerHTML = `✏️ Dernière modification par <strong>${employeeName}</strong> le <strong>${dateStr}</strong>`;
+    document.getElementById('employeeName').value = '';
     showToast('☁️ Inventaire sauvegardé sur le serveur !');
     setTimeout(() => { btn.textContent = '💾 Sauvegarder'; }, 2000);
     if(thenGoBack) { setTimeout(() => { inventorySaved = false; showPage('page-chalets'); }, 500); }
